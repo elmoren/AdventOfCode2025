@@ -49,3 +49,9 @@ pub fn part1_test() {
 
   assert day8.part1(r, 10) == 40
 }
+
+pub fn part2_test() {
+  let r = day8.parse(input |> string.split("\n"))
+
+  assert day8.part2(r) == 25_272
+}

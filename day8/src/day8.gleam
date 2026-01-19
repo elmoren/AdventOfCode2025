@@ -46,7 +46,7 @@ pub fn find(haystack: List(set.Set(Point)), needle: Point) -> Option(Set(Point))
   |> option.from_result
 }
 
-pub fn part1(boxes: List(Point), len: Int) -> Int {
+fn sort_by_distance(boxes: List(Point)) -> List(#(Point, Point)) {
   list.combination_pairs(boxes)
   |> list.sort(fn(a, b) {
     let d1 =
@@ -59,6 +59,11 @@ pub fn part1(boxes: List(Point), len: Int) -> Int {
 
     float.compare(d1, d2)
   })
+}
+
+pub fn part1(boxes: List(Point), len: Int) -> Int {
+  boxes
+  |> sort_by_distance
   |> list.take(len)
   |> list.fold([], fn(acc, v) {
     // Find existing. Each point should exist exactly once in the sets
@@ -95,6 +100,56 @@ pub fn part1(boxes: List(Point), len: Int) -> Int {
   |> list.fold(1, fn(acc, s) { acc * s })
 }
 
+pub fn part2(boxes: List(Point)) -> Int {
+  let result =
+    boxes
+    |> sort_by_distance
+    |> list.fold_until(#([], #(Point(0, 0, 0), Point(0, 0, 0))), fn(acc, v) {
+      let c1 = find(acc.0, v.0)
+      let c2 = find(acc.0, v.1)
+
+      let rest =
+        acc.0
+        |> list.filter(fn(s) {
+          case c1 {
+            Some(_c) -> !set.contains(s, v.0)
+            None -> True
+          }
+        })
+        |> list.filter(fn(s) {
+          case c2 {
+            Some(_c) -> !set.contains(s, v.1)
+            None -> True
+          }
+        })
+
+      let next = case c1, c2 {
+        None, Some(s) -> [set.insert(s, v.0), ..rest]
+        Some(s), None -> [set.insert(s, v.1), ..rest]
+        Some(s1), Some(s2) -> [set.union(s1, s2), ..rest]
+        None, None -> [set.from_list([v.0, v.1]), ..rest]
+      }
+
+      case all_connected(next, boxes) {
+        True -> list.Stop(#(next, v))
+        False -> list.Continue(#(next, v))
+      }
+    })
+
+  { result.1.0 }.x * { result.1.1 }.x
+}
+
+pub fn all_connected(graph: List(Set(Point)), boxes: List(Point)) -> Bool {
+  case list.length(graph) {
+    1 -> {
+      list.first(graph)
+      |> result.unwrap(set.new())
+      |> set.is_subset(set.from_list(boxes), _)
+    }
+    _ -> False
+  }
+}
+
 pub fn main() -> Nil {
   case simplifile.read("input.txt") {
     Ok(input) -> {
@@ -103,7 +158,7 @@ pub fn main() -> Nil {
         |> parse
 
       io.println("Part 1: " <> int.to_string(part1(points, 1000)))
-      io.println("Part 2: ")
+      io.println("Part 2: " <> int.to_string(part2(points)))
     }
 
     Error(_e) -> panic as "Cannot read file"

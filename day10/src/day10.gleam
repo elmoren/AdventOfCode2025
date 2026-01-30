@@ -67,18 +67,15 @@ pub fn new_machine(manual: String) -> Result(Machine, Nil) {
 }
 
 pub fn solve(machine: Machine) -> Int {
-  let btn_len = list.length(machine.buttons)
-  list.range(1, btn_len)
-  |> list.fold_until(btn_len, fn(_acc, v) {
+  list.range(0, machine.buttons |> list.length)
+  |> list.fold_until(0, fn(_acc, v) {
     let match =
-      list.combinations(machine.buttons, v)
-      |> list.fold_until(False, fn(_a, btns) {
+      machine.buttons
+      |> list.combinations(v)
+      |> list.any(fn(btns) {
         let r =
           list.fold(btns, 0, fn(acc, btn) { int.bitwise_exclusive_or(acc, btn) })
-        case r == machine.lights {
-          True -> Stop(True)
-          False -> Continue(False)
-        }
+        r == machine.lights
       })
 
     case match {
